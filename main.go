@@ -102,6 +102,8 @@ func parseFloatOrDefault(s string, defaultValue float64) float64 {
 	return result
 }
 
+
+
 func sendPlayerToServer(player Player) error {
 	jsonData, err := json.Marshal(player)
 	if err != nil {
@@ -113,10 +115,48 @@ func sendPlayerToServer(player Player) error {
 		return fmt.Errorf("error sending request: %v", err)
 	}
 	defer resp.Body.Close()
+	// json format player ID and name is stored in json file and all players are appended one by one
+
+	appendToJSONFile(player)
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("server returned status: %v", resp.Status)
 	}
+	return nil
+}
+
+// appendToJSONFile appends player name and player ID to a JSON file
+func appendToJSONFile(player Player) error {
+	// Define the file path for storing player data
+	filePath := "players.json"
+
+	// Open the file for reading and appending
+	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		return fmt.Errorf("error opening JSON file: %v", err)
+	}
+	defer file.Close()
+
+	// Create a map to store player data (name and ID)
+	playerData := map[string]string{
+		"playerName": player.PlayerName,
+		"playerId":   player.PlayerId,
+	}
+
+	// Convert the player data map to JSON
+	data, err := json.Marshal(playerData)
+	if err != nil {
+		return fmt.Errorf("error marshaling player data: %v", err)
+	}
+
+	// Add a newline before appending to separate entries
+	data = append(data, '\n')
+
+	// Write the player data to the file
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("error writing to JSON file: %v", err)
+	}
+
 	return nil
 }
 
